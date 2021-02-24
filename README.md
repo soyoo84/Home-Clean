@@ -257,7 +257,7 @@ public class 결제이력 {
         return reservationId;
     }
 
-    public void setreservationId(String reservationId) {
+    public void setReservationId(String reservationId) {
         this.reservationId = reservationId;
     }
     public Double get금액() {
@@ -391,7 +391,7 @@ public interface 결제이력Service {
     public void onPostPersist(){
 
         homeclean.external.결제이력 pay = new homeclean.external.결제이력();
-        pay.setreservationId(getreservationId());
+        pay.setReservationId(getreservationId());
         
         Application.applicationContext.getBean(homeclean.external.결제이력Service.class)
                 .결제(pay);
@@ -825,7 +825,7 @@ Request/Response 방식으로 구현하지 않았기 때문에 서비스가 더�
     public void onPostPersist(){
 
         homeclean.external.결제이력 pay = new homeclean.external.결제이력();
-        pay.setreservationId(getreservationId());
+        pay.setReservationId(getreservationId());
         
         Application.applicationContext.getBean(homeclean.external.결제이력Service.class)
                 .결제(pay);
@@ -847,7 +847,7 @@ Request/Response 방식으로 구현하지 않았기 때문에 서비스가 더�
 
         /**
         homeclean.external.결제이력 pay = new homeclean.external.결제이력();
-        pay.setreservationId(getreservationId());
+        pay.setReservationId(getreservationId());
         
         Application.applicationContext.getBean(homeclean.external.결제이력Service.class)
                 .결제(pay);
