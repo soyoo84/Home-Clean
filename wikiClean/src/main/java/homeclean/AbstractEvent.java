@@ -56,7 +56,7 @@ public class AbstractEvent {
     }
 
 
-    public String getEventType() {
+    public String get   EventType() {
         return eventType;
     }
 

@@ -138,7 +138,7 @@
 ### 어그리게잇으로 묶기
 ![image](https://user-images.githubusercontent.com/487999/79683618-52769680-8266-11ea-9c21-48d6812444ba.png)
 
-    - app의 Order, store 의 주문처리, 결제의 결제이력은 그와 연결된 command 와 event 들에 의하여 트랜잭션이 유지되어야 하는 단위로 그들 끼리 묶어줌
+    - app의 reservation, store 의 주문처리, 결제의 결제이력은 그와 연결된 command 와 event 들에 의하여 트랜잭션이 유지되어야 하는 단위로 그들 끼리 묶어줌
 
 ### 바운디드 컨텍스트로 묶기
 
@@ -230,7 +230,7 @@ python policy-handler.py
 - 각 서비스내에 도출된 핵심 Aggregate Root 객체를 Entity 로 선언하였다: (예시는 pay 마이크로 서비스). 이때 가능한 현업에서 사용하는 언어 (유비쿼터스 랭귀지)를 그대로 사용하려고 노력했다. 하지만, 일부 구현에 있어서 영문이 아닌 경우는 실행이 불가능한 경우가 있기 때문에 계속 사용할 방법은 아닌것 같다. (Maven pom.xml, Kafka의 topic id, FeignClient 의 서비스 id 등은 한글로 식별자를 사용하는 경우 오류가 발생하는 것을 확인하였다)
 
 ```
-package fooddelivery;
+package homeclean;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
@@ -243,7 +243,7 @@ public class 결제이력 {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
-    private String orderId;
+    private String reservationId;
     private Double 금액;
 
     public Long getId() {
@@ -253,12 +253,12 @@ public class 결제이력 {
     public void setId(Long id) {
         this.id = id;
     }
-    public String getOrderId() {
-        return orderId;
+    public String getreservationId() {
+        return reservationId;
     }
 
-    public void setOrderId(String orderId) {
-        this.orderId = orderId;
+    public void setreservationId(String reservationId) {
+        this.reservationId = reservationId;
     }
     public Double get금액() {
         return 금액;
@@ -273,7 +273,7 @@ public class 결제이력 {
 ```
 - Entity Pattern 과 Repository Pattern 을 적용하여 JPA 를 통하여 다양한 데이터소스 유형 (RDB or NoSQL) 에 대한 별도의 처리가 없도록 데이터 접근 어댑터를 자동 생성하기 위하여 Spring Data REST 의 RestRepository 를 적용하였다
 ```
-package fooddelivery;
+package homeclean;
 
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -283,28 +283,28 @@ public interface 결제이력Repository extends PagingAndSortingRepository<결�
 - 적용 후 REST API 의 테스트
 ```
 # app 서비스의 주문처리
-http localhost:8081/orders item="통닭"
+http localhost:8081/reservations item="통닭"
 
 # store 서비스의 배달처리
-http localhost:8083/주문처리s orderId=1
+http localhost:8083/주문처리s reservationId=1
 
 # 주문 상태 확인
-http localhost:8081/orders/1
+http localhost:8081/reservations/1
 
 ```
 
 
 ## 폴리글랏 퍼시스턴스
 
-앱프런트 (app) 는 서비스 특성상 많은 사용자의 유입과 상품 정보의 다양한 콘텐츠를 저장해야 하는 특징으로 인해 RDB 보다는 Document DB / NoSQL 계열의 데이터베이스인 Mongo DB 를 사용하기로 하였다. 이를 위해 order 의 선언에는 @Entity 가 아닌 @Document 로 마킹되었으며, 별다른 작업없이 기존의 Entity Pattern 과 Repository Pattern 적용과 데이터베이스 제품의 설정 (application.yml) 만으로 MongoDB 에 부착시켰다
+앱프런트 (app) 는 서비스 특성상 많은 사용자의 유입과 상품 정보의 다양한 콘텐츠를 저장해야 하는 특징으로 인해 RDB 보다는 Document DB / NoSQL 계열의 데이터베이스인 Mongo DB 를 사용하기로 하였다. 이를 위해 reservation 의 선언에는 @Entity 가 아닌 @Document 로 마킹되었으며, 별다른 작업없이 기존의 Entity Pattern 과 Repository Pattern 적용과 데이터베이스 제품의 설정 (application.yml) 만으로 MongoDB 에 부착시켰다
 
 ```
-# Order.java
+# reservation.java
 
-package fooddelivery;
+package homeclean;
 
 @Document
-public class Order {
+public class reservation {
 
     private String id; // mongo db 적용시엔 id 는 고정값으로 key가 자동 발급되는 필드기 때문에 @Id 나 @GeneratedValue 를 주지 않아도 된다.
     private String item;
@@ -314,9 +314,9 @@ public class Order {
 
 
 # 주문Repository.java
-package fooddelivery;
+package homeclean;
 
-public interface 주문Repository extends JpaRepository<Order, UUID>{
+public interface 주문Repository extends JpaRepository<reservation, UUID>{
 }
 
 # application.yml
@@ -340,7 +340,7 @@ import socket
 
 
 # To consume latest messages and auto-commit offsets
-consumer = KafkaConsumer('fooddelivery',
+consumer = KafkaConsumer('homeclean',
                          group_id='',
                          bootstrap_servers=['localhost:9092'])
 for message in consumer:
@@ -372,7 +372,7 @@ CMD ["python", "policy-handler.py"]
 ```
 # (app) 결제이력Service.java
 
-package fooddelivery.external;
+package homeclean.external;
 
 @FeignClient(name="pay", url="http://localhost:8082")//, fallback = 결제이력ServiceFallback.class)
 public interface 결제이력Service {
@@ -385,15 +385,15 @@ public interface 결제이력Service {
 
 - 주문을 받은 직후(@PostPersist) 결제를 요청하도록 처리
 ```
-# Order.java (Entity)
+# reservation.java (Entity)
 
     @PostPersist
     public void onPostPersist(){
 
-        fooddelivery.external.결제이력 pay = new fooddelivery.external.결제이력();
-        pay.setOrderId(getOrderId());
+        homeclean.external.결제이력 pay = new homeclean.external.결제이력();
+        pay.setreservationId(getreservationId());
         
-        Application.applicationContext.getBean(fooddelivery.external.결제이력Service.class)
+        Application.applicationContext.getBean(homeclean.external.결제이력Service.class)
                 .결제(pay);
     }
 ```
@@ -405,16 +405,16 @@ public interface 결제이력Service {
 # 결제 (pay) 서비스를 잠시 내려놓음 (ctrl+c)
 
 #주문처리
-http localhost:8081/orders item=통닭 storeId=1   #Fail
-http localhost:8081/orders item=피자 storeId=2   #Fail
+http localhost:8081/reservations item=통닭 storeId=1   #Fail
+http localhost:8081/reservations item=피자 storeId=2   #Fail
 
 #결제서비스 재기동
 cd 결제
 mvn spring-boot:run
 
 #주문처리
-http localhost:8081/orders item=통닭 storeId=1   #Success
-http localhost:8081/orders item=피자 storeId=2   #Success
+http localhost:8081/reservations item=통닭 storeId=1   #Success
+http localhost:8081/reservations item=피자 storeId=2   #Success
 ```
 
 - 또한 과도한 요청시에 서비스 장애가 도미노 처럼 벌어질 수 있다. (서킷브레이커, 폴백 처리는 운영단계에서 설명한다.)
@@ -430,7 +430,7 @@ http localhost:8081/orders item=피자 storeId=2   #Success
 - 이를 위하여 결제이력에 기록을 남긴 후에 곧바로 결제승인이 되었다는 도메인 이벤트를 카프카로 송출한다(Publish)
  
 ```
-package fooddelivery;
+package homeclean;
 
 @Entity
 @Table(name="결제이력_table")
@@ -449,7 +449,7 @@ public class 결제이력 {
 - 상점 서비스에서는 결제승인 이벤트에 대해서 이를 수신하여 자신의 정책을 처리하도록 PolicyHandler 를 구현한다:
 
 ```
-package fooddelivery;
+package homeclean;
 
 ...
 
@@ -481,7 +481,7 @@ public class PolicyHandler{
           카톡전송(" 주문이 왔어요! : " + 결제승인됨.toString(), 주문.getStoreId());
 
           주문관리 주문 = new 주문관리();
-          주문.setId(결제승인됨.getOrderId());
+          주문.setId(결제승인됨.getreservationId());
           주문관리Repository.save(주문);
       }
   }
@@ -493,18 +493,18 @@ public class PolicyHandler{
 # 상점 서비스 (store) 를 잠시 내려놓음 (ctrl+c)
 
 #주문처리
-http localhost:8081/orders item=통닭 storeId=1   #Success
-http localhost:8081/orders item=피자 storeId=2   #Success
+http localhost:8081/reservations item=통닭 storeId=1   #Success
+http localhost:8081/reservations item=피자 storeId=2   #Success
 
 #주문상태 확인
-http localhost:8080/orders     # 주문상태 안바뀜 확인
+http localhost:8080/reservations     # 주문상태 안바뀜 확인
 
 #상점 서비스 기동
 cd 상점
 mvn spring-boot:run
 
 #주문상태 확인
-http localhost:8080/orders     # 모든 주문의 상태가 "배송됨"으로 확인
+http localhost:8080/reservations     # 모든 주문의 상태가 "배송됨"으로 확인
 ```
 
 
@@ -556,117 +556,117 @@ hystrix:
 - 60초 동안 실시
 
 ```
-$ siege -c100 -t60S -r10 --content-type "application/json" 'http://localhost:8081/orders POST {"item": "chicken"}'
+$ siege -c100 -t60S -r10 --content-type "application/json" 'http://localhost:8081/reservations POST {"item": "chicken"}'
 
 ** SIEGE 4.0.5
 ** Preparing 100 concurrent users for battle.
 The server is now under siege...
 
-HTTP/1.1 201     0.68 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.68 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.70 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.70 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.73 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.75 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.77 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.97 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.81 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.87 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.12 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.16 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.17 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.26 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.25 secs:     207 bytes ==> POST http://localhost:8081/orders
+HTTP/1.1 201     0.68 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.68 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.70 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.70 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.73 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.75 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.77 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.97 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.81 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.87 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.12 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.16 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.17 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.26 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.25 secs:     207 bytes ==> POST http://localhost:8081/reservations
 
 * 요청이 과도하여 CB를 동작함 요청을 차단
 
-HTTP/1.1 500     1.29 secs:     248 bytes ==> POST http://localhost:8081/orders   
-HTTP/1.1 500     1.24 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     1.23 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     1.42 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     2.08 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.29 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     1.24 secs:     248 bytes ==> POST http://localhost:8081/orders
+HTTP/1.1 500     1.29 secs:     248 bytes ==> POST http://localhost:8081/reservations   
+HTTP/1.1 500     1.24 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     1.23 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     1.42 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     2.08 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.29 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     1.24 secs:     248 bytes ==> POST http://localhost:8081/reservations
 
 * 요청을 어느정도 돌려보내고나니, 기존에 밀린 일들이 처리되었고, 회로를 닫아 요청을 다시 받기 시작
 
-HTTP/1.1 201     1.46 secs:     207 bytes ==> POST http://localhost:8081/orders  
-HTTP/1.1 201     1.33 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.36 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.63 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.65 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.68 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.69 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.71 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.71 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.74 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.76 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     1.79 secs:     207 bytes ==> POST http://localhost:8081/orders
+HTTP/1.1 201     1.46 secs:     207 bytes ==> POST http://localhost:8081/reservations  
+HTTP/1.1 201     1.33 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.36 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.63 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.65 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.68 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.69 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.71 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.71 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.74 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.76 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     1.79 secs:     207 bytes ==> POST http://localhost:8081/reservations
 
 * 다시 요청이 쌓이기 시작하여 건당 처리시간이 610 밀리를 살짝 넘기기 시작 => 회로 열기 => 요청 실패처리
 
-HTTP/1.1 500     1.93 secs:     248 bytes ==> POST http://localhost:8081/orders    
-HTTP/1.1 500     1.92 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     1.93 secs:     248 bytes ==> POST http://localhost:8081/orders
+HTTP/1.1 500     1.93 secs:     248 bytes ==> POST http://localhost:8081/reservations    
+HTTP/1.1 500     1.92 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     1.93 secs:     248 bytes ==> POST http://localhost:8081/reservations
 
 * 생각보다 빨리 상태 호전됨 - (건당 (쓰레드당) 처리시간이 610 밀리 미만으로 회복) => 요청 수락
 
-HTTP/1.1 201     2.24 secs:     207 bytes ==> POST http://localhost:8081/orders  
-HTTP/1.1 201     2.32 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.16 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.19 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.19 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.19 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.21 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.29 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.30 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.38 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.59 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.61 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.62 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     2.64 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.01 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.27 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.33 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.45 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.52 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.57 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.69 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.70 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.69 secs:     207 bytes ==> POST http://localhost:8081/orders
+HTTP/1.1 201     2.24 secs:     207 bytes ==> POST http://localhost:8081/reservations  
+HTTP/1.1 201     2.32 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.16 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.19 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.19 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.19 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.21 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.29 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.30 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.38 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.59 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.61 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.62 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     2.64 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.01 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.27 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.33 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.45 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.52 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.57 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.69 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.70 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.69 secs:     207 bytes ==> POST http://localhost:8081/reservations
 
 * 이후 이러한 패턴이 계속 반복되면서 시스템은 도미노 현상이나 자원 소모의 폭주 없이 잘 운영됨
 
 
-HTTP/1.1 500     4.76 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.23 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.76 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.74 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.82 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.82 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.84 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.66 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     5.03 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.22 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.19 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.18 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.69 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.65 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     5.13 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.84 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.25 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.25 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.80 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.87 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.33 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.86 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.96 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.34 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 500     4.04 secs:     248 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.50 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.95 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.54 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     4.65 secs:     207 bytes ==> POST http://localhost:8081/orders
+HTTP/1.1 500     4.76 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.23 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.76 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.74 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.82 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.82 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.84 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.66 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     5.03 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.22 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.19 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.18 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.69 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.65 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     5.13 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.84 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.25 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.25 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.80 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.87 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.33 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.86 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.96 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.34 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 500     4.04 secs:     248 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.50 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.95 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.54 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     4.65 secs:     207 bytes ==> POST http://localhost:8081/reservations
 
 
 :
@@ -701,7 +701,7 @@ kubectl autoscale deploy pay --min=1 --max=10 --cpu-percent=15
 ```
 - CB 에서 했던 방식대로 워크로드를 2분 동안 걸어준다.
 ```
-siege -c100 -t120S -r10 --content-type "application/json" 'http://localhost:8081/orders POST {"item": "chicken"}'
+siege -c100 -t120S -r10 --content-type "application/json" 'http://localhost:8081/reservations POST {"item": "chicken"}'
 ```
 - 오토스케일이 어떻게 되고 있는지 모니터링을 걸어둔다:
 ```
@@ -734,16 +734,16 @@ Concurrency:		       96.02
 
 - seige 로 배포작업 직전에 워크로드를 모니터링 함.
 ```
-siege -c100 -t120S -r10 --content-type "application/json" 'http://localhost:8081/orders POST {"item": "chicken"}'
+siege -c100 -t120S -r10 --content-type "application/json" 'http://localhost:8081/reservations POST {"item": "chicken"}'
 
 ** SIEGE 4.0.5
 ** Preparing 100 concurrent users for battle.
 The server is now under siege...
 
-HTTP/1.1 201     0.68 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.68 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.70 secs:     207 bytes ==> POST http://localhost:8081/orders
-HTTP/1.1 201     0.70 secs:     207 bytes ==> POST http://localhost:8081/orders
+HTTP/1.1 201     0.68 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.68 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.70 secs:     207 bytes ==> POST http://localhost:8081/reservations
+HTTP/1.1 201     0.70 secs:     207 bytes ==> POST http://localhost:8081/reservations
 :
 
 ```
@@ -819,20 +819,20 @@ Request/Response 방식으로 구현하지 않았기 때문에 서비스가 더�
 
 예) API 변화시
 ```
-# Order.java (Entity)
+# reservation.java (Entity)
 
     @PostPersist
     public void onPostPersist(){
 
-        fooddelivery.external.결제이력 pay = new fooddelivery.external.결제이력();
-        pay.setOrderId(getOrderId());
+        homeclean.external.결제이력 pay = new homeclean.external.결제이력();
+        pay.setreservationId(getreservationId());
         
-        Application.applicationContext.getBean(fooddelivery.external.결제이력Service.class)
+        Application.applicationContext.getBean(homeclean.external.결제이력Service.class)
                 .결제(pay);
 
                 --> 
 
-        Application.applicationContext.getBean(fooddelivery.external.결제이력Service.class)
+        Application.applicationContext.getBean(homeclean.external.결제이력Service.class)
                 .결제2(pay);
 
     }
@@ -840,16 +840,16 @@ Request/Response 방식으로 구현하지 않았기 때문에 서비스가 더�
 
 예) Retire 시
 ```
-# Order.java (Entity)
+# reservation.java (Entity)
 
     @PostPersist
     public void onPostPersist(){
 
         /**
-        fooddelivery.external.결제이력 pay = new fooddelivery.external.결제이력();
-        pay.setOrderId(getOrderId());
+        homeclean.external.결제이력 pay = new homeclean.external.결제이력();
+        pay.setreservationId(getreservationId());
         
-        Application.applicationContext.getBean(fooddelivery.external.결제이력Service.class)
+        Application.applicationContext.getBean(homeclean.external.결제이력Service.class)
                 .결제(pay);
 
         **/

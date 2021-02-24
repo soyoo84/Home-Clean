@@ -1,6 +1,6 @@
-package fooddelivery;
+package homeclean;
 
-import fooddelivery.config.kafka.KafkaProcessor;
+import homeclean.config.kafka.KafkaProcessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;

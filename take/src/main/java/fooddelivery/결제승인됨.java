@@ -1,14 +1,13 @@
+
 package homeclean;
+
+import javax.persistence.PrePersist;
 
 public class 결제승인됨 extends AbstractEvent {
 
     private Long id;
     private String reservationId;
     private Double 금액;
-
-    public 결제승인됨(){
-        super();
-    }
 
     public Long getId() {
         return id;
@@ -30,5 +29,15 @@ public class 결제승인됨 extends AbstractEvent {
 
     public void set금액(Double 금액) {
         this.금액 = 금액;
+    }
+
+
+    @PrePersist
+    public void delay(){
+        try {
+            Thread.currentThread().sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -1,14 +1,11 @@
 package homeclean;
 
+
 public class 결제취소됨 extends AbstractEvent {
 
     private Long id;
-    private String reservationId;
+    private Long reservationId;
 
-
-    public 결제취소됨(){
-        super();
-    }
 
     public Long getId() {
         return id;
@@ -18,11 +15,11 @@ public class 결제취소됨 extends AbstractEvent {
         this.id = id;
     }
 
-    public String getreservationId() {
+    public Long getreservationId() {
         return reservationId;
     }
 
-    public void setreservationId(String reservationId) {
+    public void setreservationId(Long reservationId) {
         this.reservationId = reservationId;
     }
 }

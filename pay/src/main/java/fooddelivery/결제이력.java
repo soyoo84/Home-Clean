@@ -1,4 +1,4 @@
-package fooddelivery;
+package homeclean;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
@@ -14,7 +14,7 @@ public class 결제이력 {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
-    private String orderId;
+    private String reservationId;
     private Double 금액;
     private String 행위;
 
@@ -57,12 +57,12 @@ public class 결제이력 {
     public void setId(Long id) {
         this.id = id;
     }
-    public String getOrderId() {
-        return orderId;
+    public String getreservationId() {
+        return reservationId;
     }
 
-    public void setOrderId(String orderId) {
-        this.orderId = orderId;
+    public void setreservationId(String reservationId) {
+        this.reservationId = reservationId;
     }
     public Double get금액() {
         return 금액;

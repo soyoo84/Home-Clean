@@ -8,22 +8,22 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: app
+        - id: wikiClean
           uri: http://localhost:8081
           predicates:
-            - Path=/주문/** /메뉴판/**/통합주문상태/**
-        - id: pay
+            - Path=/wikiClean/**
+        - id: reservation
           uri: http://localhost:8082
           predicates:
-            - Path=/결제이력/** 
-        - id: store
+            - Path=/reservation/**
+        - id: bookingList
           uri: http://localhost:8083
           predicates:
-            - Path=/주문관리/** /주문상세보기/**
-        - id: customer
+            - Path=/bookingList/**
+        - id: pay
           uri: http://localhost:8084
           predicates:
-            - Path= 
+            - Path=/pay/**
       globalcors:
         corsConfigurations:
           '[/**]':
@@ -43,22 +43,22 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: app
-          uri: http://app:8080
+        - id: wikiClean
+          uri: http://wikiClean:8080
           predicates:
-            - Path=/주문/** /메뉴판/**/통합주문상태/**
+            - Path=/wikiClean/**
+        - id: reservation
+          uri: http://reservation:8080
+          predicates:
+            - Path=/reservation/**
+        - id: bookingList
+          uri: http://bookingList:8080
+          predicates:
+            - Path=/bookingList/**
         - id: pay
           uri: http://pay:8080
           predicates:
-            - Path=/결제이력/** 
-        - id: store
-          uri: http://store:8080
-          predicates:
-            - Path=/주문관리/** /주문상세보기/**
-        - id: customer
-          uri: http://customer:8080
-          predicates:
-            - Path= 
+            - Path=/pay/**
       globalcors:
         corsConfigurations:
           '[/**]':

@@ -1,4 +1,4 @@
-package fooddelivery;
+package homeclean;
 
 import org.springframework.data.repository.PagingAndSortingRepository;
 
