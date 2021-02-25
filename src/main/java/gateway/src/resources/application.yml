@@ -1,0 +1,74 @@
+server:
+  port: 8088
+
+---
+
+spring:
+  profiles: default
+  cloud:
+    gateway:
+      routes:
+        - id: wikiClean
+          uri: http://localhost:8081
+          predicates:
+            - Path=/wikiClean/**
+        - id: reservation
+          uri: http://localhost:8082
+          predicates:
+            - Path=/reservation/**
+        - id: take
+          uri: http://localhost:8083
+          predicates:
+            - Path=/take/**
+        - id: pay
+          uri: http://localhost:8084
+          predicates:
+            - Path=/pay/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+
+
+---
+
+spring:
+  profiles: docker
+  cloud:
+    gateway:
+      routes:
+        - id: wikiClean
+          uri: http://wikiClean:8080
+          predicates:
+            - Path=/wikiClean/**
+        - id: homer
+          uri: http://homer:8080
+          predicates:
+            - Path=/homer/**
+        - id: take
+          uri: http://take:8080
+          predicates:
+            - Path=/take/**
+        - id: pay
+          uri: http://pay:8080
+          predicates:
+            - Path=/pay/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+
+server:
+  port: 8080
